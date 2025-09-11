@@ -1,1 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>2025 부스 추천/투표</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<style>
+body {
+  margin:0; height:100vh;
+  background: linear-gradient(180deg, #020617 0%, #081129 60%, #000814 100%);
+  font-family: 'Noto Sans KR', sans-serif;
+  color:#fff;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  text-align:center;
+}
+
+h1 { font-size: clamp(28px, 5vw, 48px); margin-bottom:10px; }
+.countdown { font-size: clamp(20px,4vw,36px); font-weight:600; margin-bottom:20px; }
+
+button {
+  background: linear-gradient(135deg, #6d5dfc, #b372ff);
+  border:none; border-radius:2rem; padding:14px 40px;
+  font-size:18px; font-weight:700; color:#fff; cursor:pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 20px rgba(120,100,255,0.3);
+}
+button:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(180,140,255,0.6); }
+
+.input-box { margin:20px 0; }
+input, textarea {
+  background: transparent; border:2px solid rgba(255,255,255,0.6);
+  border-radius:1rem; padding:12px; color:#fff; font-size:16px;
+  width:260px; outline:none; margin-bottom:10px;
+}
+textarea { resize:none; height:120px; }
+</style>
+</head>
+<body>
+<h1 id="statusText">Loading...</h1>
+<div class="countdown" id="countdown">--:--:--</div>
+<div id="formContainer"></div>
+
+<script>
+/* ---------------- Firebase 초기화 ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCfgFrqqwTDssY11-Z1Ti1pNMSSWJIHA_Q",
+  authDomain: "report209-16824.firebaseapp.com",
+  projectId: "report209-16824",
+  storageBucket: "report209-16824.firebasestorage.app",
+  messagingSenderId: "45258886547",
+  appId: "1:45258886547:web:3589999076939b8f58ec66"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ---------------- 기간 설정 ---------------- */
+const recommendStart = new Date("2025-09-11T20:00:00+09:00");
+const recommendEnd   = new Date("2025-09-12T19:59:59+09:00");
+const voteStart      = new Date("2025-09-12T20:00:00+09:00");
+const voteEnd        = new Date("2025-09-18T23:59:59+09:00");
+
+/* ---------------- 모드 결정 ---------------- */
+function getMode(){
+  const now = new Date();
+  if(now>=recommendStart && now<=recommendEnd) return "recommend";
+  if(now>=voteStart && now<=voteEnd) return "vote";
+  return "closed";
+}
+
+/* ---------------- 카운트다운 ---------------- */
+function updateCountdown(){
+  const now = new Date();
+  let target;
+  const mode = getMode();
+  if(mode=="recommend") target = recommendEnd;
+  else if(mode=="vote") target = voteEnd;
+  else {
+    document.getElementById("countdown").textContent = "--:--:--";
+    return;
+  }
+
+  const diff = target-now;
+  const d = Math.floor(diff/86400000);
+  const h = Math.floor((diff%86400000)/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  document.getElementById("countdown").textContent =
+    (d>0? d+"일 ":"") + String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+setInterval(updateCountdown,1000);
+updateCountdown();
+
+/* ---------------- 추천 폼 ---------------- */
+async function showRecommendationForm(){
+  const container = document.getElementById("formContainer");
+  container.innerHTML="";
+  let step=0; const data={};
+
+  function renderStep(){
+    container.innerHTML="";
+    if(step==0){
+      const input=document.createElement("input"); input.placeholder="학번 입력(필수)";
+      container.appendChild(input);
+      const btn=document.createElement("button"); btn.textContent="다음";
+      btn.onclick=()=>{ if(!input.value){alert("학번 필수"); return;} data.studentId=input.value; step++; renderStep(); };
+      container.appendChild(btn);
+    }
+    else if(step==1){
+      const input=document.createElement("input"); input.placeholder="부스 제목 입력(필수)";
+      container.appendChild(input);
+      const btn=document.createElement("button"); btn.textContent="다음";
+      btn.onclick=()=>{ if(!input.value){alert("제목 필수"); return;} data.title=input.value; step++; renderStep(); };
+      container.appendChild(btn);
+    }
+    else if(step==2){
+      const textarea=document.createElement("textarea"); textarea.placeholder="부스 설명 입력(필수)";
+      container.appendChild(textarea);
+      const btn=document.createElement("button"); btn.textContent="제출";
+      btn.onclick=async()=>{
+        if(!textarea.value){alert("설명 필수"); return;}
+        data.description=textarea.value;
+        await db.collection("recommendations").add({
+          studentId:data.studentId,
+          title:data.title,
+          description:data.description,
+          timestamp:firebase.firestore.Timestamp.now()
+        });
+        container.innerHTML="<p>참여해주셔서 감사합니다</p>";
+      };
+      container.appendChild(btn);
+    }
+  }
+  renderStep();
+}
+
+/* ---------------- 투표 폼 ---------------- */
+async function showVoteForm(){
+  const container = document.getElementById("formContainer");
+  container.innerHTML="";
+  let step=0; const data={};
+
+  const candidatesSnapshot = await db.collection("candidates").get();
+  const candidates = candidatesSnapshot.docs.map(d=>d.data().name);
+
+  function renderStep(){
+    container.innerHTML="";
+    if(step==0){
+      const input=document.createElement("input"); input.placeholder="학번 입력(필수)";
+      container.appendChild(input);
+      const btn=document.createElement("button"); btn.textContent="다음";
+      btn.onclick=()=>{ if(!input.value){alert("학번 필수"); return;} data.studentId=input.value; step++; renderStep(); };
+      container.appendChild(btn);
+    }
+    else if(step==1){
+      const input=document.createElement("input"); input.placeholder="인증 코드 입력(필수)";
+      container.appendChild(input);
+      const btn=document.createElement("button"); btn.textContent="다음";
+      btn.onclick=async()=>{
+        if(!input.value){alert("코드 필수"); return;}
+        const codeDoc = await db.collection("codes").doc(data.studentId).get();
+        if(!codeDoc.exists || codeDoc.data().code!==input.value){alert("인증 코드 오류"); return;}
+        step++; renderStep();
+      };
+      container.appendChild(btn);
+    }
+    else if(step==2){
+      candidates.forEach(c=>{
+        const checkbox=document.createElement("input"); checkbox.type="checkbox"; checkbox.value=c;
+        container.appendChild(checkbox); container.appendChild(document.createTextNode(c));
+        container.appendChild(document.createElement("br"));
+      });
+      const btn=document.createElement("button"); btn.textContent="제출";
+      btn.onclick=async()=>{
+        const checked = Array.from(container.querySelectorAll("input[type=checkbox]"))
+                        .filter(i=>i.checked).map(i=>i.value);
+        if(checked.length==0 || checked.length>2){alert("2개까지 선택 가능"); return;}
+        const today = new Date().toISOString().slice(0,10);
+        const voteId = data.studentId+"_"+today;
+        const doc = await db.collection("votes").doc(voteId).get();
+        if(doc.exists){alert("오늘 이미 투표 완료"); return;}
+        await db.collection("votes").doc(voteId).set({
+          studentId:data.studentId, date:today, choices:checked
+        });
+        container.innerHTML="<p>오늘 투표가 완료되었습니다.</p>";
+      };
+      container.appendChild(btn);
+    }
+  }
+  renderStep();
+}
+
+/* ---------------- 모드 자동 실행 ---------------- */
+function startApp(){
+  const mode=getMode();
+  if(mode=="recommend") showRecommendationForm();
+  else if(mode=="vote") showVoteForm();
+  else document.getElementById("formContainer").innerHTML="<p>투표가 종료되었습니다.</p>";
+}
+startApp();
+</script>
+</body>
+</html>
 
