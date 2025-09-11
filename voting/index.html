@@ -20,6 +20,11 @@ body {
   text-align:center;
   overflow-x:hidden;
 }
+.date-info {
+  font-size: clamp(12px,2.5vw,16px);
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 6px;
+}
 
 /* ---------------- 제목/카운트다운 ---------------- */
 h1 {
@@ -75,6 +80,7 @@ label { display:flex; align-items:center; justify-content:flex-start; margin-bot
 </style>
 </head>
 <body>
+<div class="date-info" id="dateInfo"></div>
 <h1 id="statusText">Loading...</h1>
 <div class="countdown" id="countdown">--:--:--</div>
 <div id="formContainer"></div>
@@ -223,12 +229,27 @@ async function showVoteForm(){
 
 /* ---------------- 모드 자동 실행 ---------------- */
 function startApp(){
-  const mode=getMode();
-  const statusText=document.getElementById("statusText");
-  if(mode=="recommend"){ statusText.textContent="현재 부스 주제 추천 진행중"; showRecommendationForm(); }
-  else if(mode=="vote"){ statusText.textContent="현재 부스 주제 투표 진행중"; showVoteForm(); }
-  else { statusText.textContent="투표가 종료되었습니다"; document.getElementById("formContainer").innerHTML="<p>투표가 종료되었습니다.</p>"; }
+  const mode = getMode();
+  const statusText = document.getElementById("statusText");
+  const dateInfo = document.getElementById("dateInfo");
+
+  if(mode=="recommend"){
+    statusText.textContent = "현재 부스 주제 추천 진행중";
+    dateInfo.textContent = `KST 2025-09-11 20:00 ~ 2025-09-12 19:59`;
+    showRecommendationForm();
+  }
+  else if(mode=="vote"){
+    statusText.textContent = "현재 부스 주제 투표 진행중";
+    dateInfo.textContent = `KST 2025-09-12 20:00 ~ 종료: 2025-09-18 23:59`;
+    showVoteForm();
+  }
+  else{
+    statusText.textContent = "현재 진행중인 투표가 없습니다";
+    dateInfo.textContent = "";
+    document.getElementById("formContainer").innerHTML="<p>-</p>";
+  }
 }
+
 startApp();
 </script>
 </body>
