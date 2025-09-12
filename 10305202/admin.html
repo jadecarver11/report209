@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 페이지 - 2025 부스 추천/투표</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+<style>
+/* ---------------- 전체 화면 + 배경 ---------------- */
+body {
+  margin:0; padding:0; min-height:100vh;
+  background: linear-gradient(180deg, #020617 0%, #081129 60%, #000814 100%);
+  font-family: 'Noto Sans KR', sans-serif;
+  color:#fff;
+  display:flex; flex-direction:column; justify-content:flex-start; align-items:center;
+  text-align:center;
+  overflow-x:hidden;
+  padding: 20px;
+}
+h1 {
+  font-size: clamp(20px,4vw,36px);
+  margin-bottom:20px;
+}
+h2 {
+  font-size: clamp(18px,3.5vw,28px);
+  margin:20px 0 12px 0;
+  border-bottom:1px solid rgba(255,255,255,0.3);
+  padding-bottom:6px;
+}
+.card {
+  background: rgba(0,0,0,0.4);
+  padding: 20px;
+  border-radius: 1rem;
+  box-shadow: 0 0 15px rgba(255,255,255,0.1);
+  max-width:600px; width:100%;
+  margin-bottom: 30px;
+  text-align:left;
+}
+ul { list-style:none; padding:0; margin:0; }
+li {
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  display:flex; justify-content:space-between;
+}
+.count { font-weight:700; color:#b372ff; }
+</style>
+</head>
+<body>
+  <h1>관리자 페이지</h1>
+
+  <div class="card">
+    <h2>추천 현황</h2>
+    <ul id="recommendList">
+      <li>불러오는 중...</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>투표 집계 현황</h2>
+    <ul id="voteList">
+      <li>불러오는 중...</li>
+    </ul>
+  </div>
+
+<script>
+/* ---------------- Firebase 초기화 ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCfgFrqqwTDssY11-Z1Ti1pNMSSWJIHA_Q",
+  authDomain: "report209-16824.firebaseapp.com",
+  projectId: "report209-16824",
+  storageBucket: "report209-16824.firebasestorage.app",
+  messagingSenderId: "45258886547",
+  appId: "1:45258886547:web:3589999076939b8f58ec66"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ---------------- 추천 현황 불러오기 ---------------- */
+async function loadRecommendations(){
+  const snapshot = await db.collection("recommendations").orderBy("timestamp","desc").get();
+  const list = document.getElementById("recommendList");
+  list.innerHTML="";
+  if(snapshot.empty){
+    list.innerHTML="<li>추천 데이터가 없습니다.</li>";
+    return;
+  }
+  snapshot.forEach(doc=>{
+    const d=doc.data();
+    const li=document.createElement("li");
+    li.innerHTML=`<span>${d.title} - <small>${d.studentId}</small></span>`;
+    list.appendChild(li);
+  });
+}
+
+/* ---------------- 투표 현황 집계 ---------------- */
+async function loadVotes(){
+  const snapshot = await db.collection("votes").get();
+  const counts={};
+  snapshot.forEach(doc=>{
+    const d=doc.data();
+    d.choices.forEach(c=>{
+      counts[c]=(counts[c]||0)+1;
+    });
+  });
+  const list = document.getElementById("voteList");
+  list.innerHTML="";
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(entries.length===0){
+    list.innerHTML="<li>투표 데이터가 없습니다.</li>";
+    return;
+  }
+  entries.forEach(([name,count])=>{
+    const li=document.createElement("li");
+    li.innerHTML=`<span>${name}</span><span class="count">${count}</span>`;
+    list.appendChild(li);
+  });
+}
+
+/* ---------------- 실행 ---------------- */
+loadRecommendations();
+loadVotes();
+</script>
+</body>
+</html>
