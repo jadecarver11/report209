@@ -91,7 +91,7 @@ async function loadRecommendations(){
   snapshot.forEach(doc=>{
     const d=doc.data();
     const li=document.createElement("li");
-    li.innerHTML=`<span>${d.title} - <small>${d.studentId}</small></span>`;
+    li.innerHTML=`<span>${d.title}</span>`;
     list.appendChild(li);
   });
 }
