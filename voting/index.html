@@ -246,7 +246,7 @@ async function showVoteForm(){
       container.appendChild(btn);
     } else if(step==2){
       const guide=document.createElement("p");
-      guide.textContent="후보 무조건 2개 선택해주세요";
+      guide.textContent="후보는 무조건 2개 선택해주세요";
       guide.style.textAlign="center";
       guide.style.marginBottom="16px";
       guide.style.fontWeight="700";
@@ -263,7 +263,7 @@ async function showVoteForm(){
       btn.onclick=async()=>{
         const checked = Array.from(container.querySelectorAll("input[type=checkbox]"))
                         .filter(i=>i.checked).map(i=>i.value);
-        if(checked.length==0 || checked.length>2){alert("후보는 2개를 선택해야 합니다"); return;}
+        if(checked.length==0 || checked.length!=2){alert("후보는 2개를 선택해야 합니다"); return;}
         const today = new Date().toISOString().slice(0,10);
         const voteId = data.studentId+"_"+today;
         const doc = await db.collection("votes").doc(voteId).get();
