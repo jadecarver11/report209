@@ -47,23 +47,64 @@ li {
   display:flex; justify-content:space-between;
 }
 .count { font-weight:700; color:#b372ff; }
+
+/* ---------------- 입력창/버튼 ---------------- */
+#loginContainer {
+  background: rgba(0,0,0,0.5);
+  padding: 20px;
+  border-radius: 1rem;
+  max-width: 400px;
+  width: 100%;
+  margin-top: 100px;
+}
+input {
+  width: 100%;
+  padding: 12px;
+  border:2px solid rgba(255,255,255,0.6);
+  border-radius: 1rem;
+  background: rgba(255,255,255,0.05);
+  color:#fff;
+  font-size: 16px;
+  margin-bottom: 12px;
+  outline: none;
+}
+button {
+  background: linear-gradient(135deg, #6d5dfc, #b372ff);
+  border:none; border-radius:2rem;
+  padding:12px 24px; font-size:16px; font-weight:700;
+  color:#fff; cursor:pointer; transition: all 0.25s ease;
+  width:100%;
+}
+button:hover {
+  transform:scale(1.05);
+  box-shadow: 0 0 20px rgba(180,140,255,0.6);
+}
 </style>
 </head>
 <body>
   <h1>관리자 페이지</h1>
 
-  <div class="card">
-    <h2>추천 현황</h2>
-    <ul id="recommendList">
-      <li>불러오는 중...</li>
-    </ul>
+  <!-- 로그인 영역 -->
+  <div id="loginContainer">
+    <input type="password" id="adminCode" placeholder="관리자 코드 입력">
+    <button onclick="checkCode()">확인</button>
   </div>
 
-  <div class="card">
-    <h2>투표 집계 현황</h2>
-    <ul id="voteList">
-      <li>불러오는 중...</li>
-    </ul>
+  <!-- 실제 관리자 컨텐츠 -->
+  <div id="adminContent" style="display:none;">
+    <div class="card">
+      <h2>추천 현황</h2>
+      <ul id="recommendList">
+        <li>불러오는 중...</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>투표 집계 현황</h2>
+      <ul id="voteList">
+        <li>불러오는 중...</li>
+      </ul>
+    </div>
   </div>
 
 <script>
@@ -79,6 +120,21 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+
+const ADMIN_CODE = "1609*";
+
+function checkCode(){
+  const input = document.getElementById("adminCode").value;
+  if(input === ADMIN_CODE){
+    document.getElementById("loginContainer").style.display="none";
+    document.getElementById("adminContent").style.display="block";
+    loadRecommendations();
+    loadVotes();
+  } else {
+    alert("관리자 코드가 올바르지 않습니다.");
+  }
+}
+
 /* ---------------- 추천 현황 불러오기 ---------------- */
 async function loadRecommendations(){
   const snapshot = await db.collection("recommendations").orderBy("timestamp","desc").get();
@@ -91,7 +147,7 @@ async function loadRecommendations(){
   snapshot.forEach(doc=>{
     const d=doc.data();
     const li=document.createElement("li");
-    li.innerHTML=`<span>${d.title}</span>`;
+    li.innerHTML=`<span>${d.title} - <small>${d.studentId}</small></span>`;
     list.appendChild(li);
   });
 }
@@ -119,10 +175,6 @@ async function loadVotes(){
     list.appendChild(li);
   });
 }
-
-/* ---------------- 실행 ---------------- */
-loadRecommendations();
-loadVotes();
 </script>
 </body>
 </html>
