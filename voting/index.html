@@ -221,9 +221,15 @@ async function showVoteForm(){
   const container=document.getElementById("formContainer");
   container.innerHTML="";
   let step=0; const data={};
-
+  
   const candidatesSnapshot = await db.collection("candidates").get();
   const candidates = candidatesSnapshot.docs.map(d=>d.data().name);
+  function getKSTDateString(){
+  const now = new Date();
+  // UTC 시간(ms) + 9시간(ms)
+  const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  return kst.toISOString().slice(0,10);  // YYYY-MM-DD
+}
 
   function renderStep(){
     container.innerHTML="";
@@ -264,13 +270,20 @@ async function showVoteForm(){
         const checked = Array.from(container.querySelectorAll("input[type=checkbox]"))
                         .filter(i=>i.checked).map(i=>i.value);
         if(checked.length==0 || checked.length!=2){alert("후보는 2개를 선택해야 합니다"); return;}
-        const today = new Date().toISOString().slice(0,10);
-        const voteId = data.studentId+"_"+today;
-        const doc = await db.collection("votes").doc(voteId).get();
-        if(doc.exists){alert("오늘 이미 투표 완료"); return;}
-        await db.collection("votes").doc(voteId).set({
-          studentId:data.studentId, date:today, choices:checked
-        });
+        // 중복 방지용 날짜를 한국 시각 기준으로 생성
+const today = getKSTDateString();
+const voteId = data.studentId+"_"+today;
+const doc = await db.collection("votes").doc(voteId).get();
+if(doc.exists){
+  alert("오늘 이미 투표 완료"); 
+  return;
+}
+await db.collection("votes").doc(voteId).set({
+  studentId:data.studentId, 
+  date:today, 
+  choices:checked
+});
+
         container.innerHTML="<p>오늘 투표가 완료되었습니다.</p>";
       };
       container.appendChild(btn);
