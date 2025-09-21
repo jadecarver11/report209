@@ -109,7 +109,13 @@
 
     .explorer-path{
       padding:6px 12px; font-size:13px; background:#f3f4f6; border-bottom:1px solid #e5e7eb;
+      display:flex; align-items:center; gap:10px;
     }
+    .back-btn{
+      cursor:pointer; font-weight:bold; padding:2px 6px; border-radius:4px;
+      background:#e5e7eb; border:1px solid #d1d5db; font-size:12px;
+    }
+    .back-btn:hover{background:#d1d5db;}
 
     .explorer-body{
       flex:1; overflow:auto; padding:12px; background:#fff;
@@ -145,7 +151,10 @@
         <div class="title" id="explorer-title">탐색기</div>
         <div class="close-btn" onclick="closeModal()">✕</div>
       </div>
-      <div class="explorer-path" id="explorer-path">/</div>
+      <div class="explorer-path">
+        <button class="back-btn" id="back-btn">⬅️</button>
+        <div id="explorer-path">/</div>
+      </div>
       <div class="explorer-body" id="explorer-body"></div>
     </div>
   </div>
@@ -156,6 +165,7 @@
     const explorerTitle = document.getElementById('explorer-title');
     const explorerBody = document.getElementById('explorer-body');
     const explorerPath = document.getElementById('explorer-path');
+    const backBtn = document.getElementById('back-btn');
 
     let rootData = [];
     let currentPath = [];
@@ -197,7 +207,7 @@
 
     function renderExplorer(node, path){
       explorerTitle.textContent = node.name || "탐색기";
-      explorerPath.textContent = path.join(" > ");
+      explorerPath.textContent = path.length ? path.join(" > ") : "/";
       explorerBody.innerHTML = '';
 
       if(node.children && node.children.length){
@@ -246,6 +256,24 @@
         window.open(target, "_blank");
       }
     }
+
+    function goBack(){
+      if(currentPath.length <= 1){
+        // 최상위로 돌아가면 모달 닫기
+        closeModal();
+        return;
+      }
+      currentPath.pop(); // 마지막 경로 제거
+      let node = rootData;
+      for(const name of currentPath){
+        node = node.find(item => item.name===name);
+        if(node && node.children) node = node;
+      }
+      currentNode = node;
+      renderExplorer(node, currentPath);
+    }
+
+    backBtn.addEventListener('click', goBack);
 
     function closeModal(){ modal.classList.remove('active'); }
 
