@@ -1,25 +1,15 @@
 [
   {
     "type": "folder",
-    "name": "과제",
+    "name": "잡동사니",
     "children": [
-      { "type": "file", "name": "리포트.docx", "action": "open:report.docx" },
-      { "type": "file", "name": "발표자료.pptx", "action": "redirect:https://example.com/ppt" },
-      {
-        "type": "folder",
-        "name": "참고자료",
-        "children": [
-          { "type": "file", "name": "논문.pdf", "action": "open:paper.pdf" }
-        ]
-      }
     ]
   },
   {
     "type": "folder",
-    "name": "사진첩",
+    "name": "투표",
     "children": [
-      { "type": "file", "name": "여름휴가.jpg", "action": "open:summer.jpg" },
-      { "type": "file", "name": "겨울산행.png", "action": "open:winter.png" }
+      { "type": "file", "name": "축제_부스_투표.lnk", "action": "redirect:https://naver.com" }
     ]
   }
 ]
