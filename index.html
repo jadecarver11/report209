@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>트렌디 데스크탑 — Paperlogy</title>
+  <title>2025209</title>
 
   <!-- Paperlogy 웹폰트 로드 -->
   <link href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css" rel="stylesheet">
@@ -49,19 +49,25 @@
       transform:translate(30%, -20%) rotate(20deg);
     }
 
+    /* 폴더 컨테이너 */
+    #folders{
+      position:absolute;
+      top:160px; /* 텍스트 아래로 내림 */
+      left:40px;
+      display:flex; flex-wrap:wrap;
+    }
+
     /* 폴더 아이콘 */
     .folder{
       position:relative;
-      width:90px; height:90px;
+      width:90px; height:110px;
       margin:20px 40px;
       display:inline-flex; flex-direction:column; align-items:center;
       cursor:pointer;
     }
     .folder .icon{
       width:80px; height:60px;
-      background:var(--purple);
-      border-radius:10px;
-      box-shadow:0 4px 8px rgba(0,0,0,0.2);
+      background-size:cover; background-position:center;
     }
     .folder .label{
       margin-top:8px; font-size:14px; font-weight:600;
@@ -83,16 +89,33 @@
       font-size:34px; color:#fff; cursor:pointer;
     }
 
-    /* 모달 */
+    /* 모달 (윈도우 탐색기 스타일) */
     .modal{
       position:fixed; inset:0; background:rgba(0,0,0,0.5);
       display:none; align-items:center; justify-content:center;
     }
     .modal.active{display:flex;}
-    .modal .sheet{
-      background:#fff; border-radius:14px; padding:20px;
-      max-width:600px; width:90%; max-height:80vh; overflow:auto;
+    .modal .explorer{
+      background:#f9fafb; border:1px solid #cbd5e1; border-radius:8px;
+      width:700px; max-width:95%; height:500px; display:flex; flex-direction:column;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
     }
+    .explorer-header{
+      background:#e5e7eb; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;
+      border-bottom:1px solid #d1d5db;
+    }
+    .explorer-header .title{font-weight:600;}
+    .explorer-header .close-btn{cursor:pointer; font-weight:900;}
+
+    .explorer-body{
+      flex:1; overflow:auto; padding:12px; background:#fff;
+    }
+    .explorer-body ul{list-style:none; margin:0; padding:0;}
+    .explorer-body li{
+      padding:6px 8px; border-bottom:1px solid #f1f5f9; font-size:14px;
+      cursor:default;
+    }
+    .explorer-body li:hover{background:#f9fafb;}
   </style>
 </head>
 <body>
@@ -110,15 +133,22 @@
     </div>
   </div>
 
-  <!-- 폴더 모달 -->
+  <!-- 폴더 모달 (탐색기) -->
   <div id="modal" class="modal">
-    <div class="sheet" id="sheet"></div>
+    <div class="explorer">
+      <div class="explorer-header">
+        <div class="title" id="explorer-title">폴더</div>
+        <div class="close-btn" onclick="closeModal()">✕</div>
+      </div>
+      <div class="explorer-body" id="explorer-body"></div>
+    </div>
   </div>
 
   <script>
     const foldersDiv = document.getElementById('folders');
     const modal = document.getElementById('modal');
-    const sheet = document.getElementById('sheet');
+    const explorerTitle = document.getElementById('explorer-title');
+    const explorerBody = document.getElementById('explorer-body');
 
     async function loadFolders(){
       foldersDiv.innerHTML = '';
@@ -130,13 +160,23 @@
         const items = lines.filter(l => !l.startsWith('#'));
 
         items.forEach(line => {
-          // 폴더: 이름|내용1;내용2;...
           const [name, contentStr] = line.split('|');
           const contents = contentStr ? contentStr.split(';').map(c=>c.trim()).filter(Boolean) : [];
 
           const el = document.createElement('div');
           el.className = 'folder';
-          el.innerHTML = `<div class="icon"></div><div class="label">${escapeHtml(name)}</div>`;
+
+          const icon = document.createElement('div');
+          icon.className = 'icon';
+          icon.style.backgroundImage = contents.length > 0 ? "url('folder.png')" : "url('folder_empty.png')";
+
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.textContent = name;
+
+          el.appendChild(icon);
+          el.appendChild(label);
+
           el.addEventListener('dblclick', ()=> openFolder(name, contents));
           foldersDiv.appendChild(el);
         });
@@ -147,7 +187,8 @@
     }
 
     function openFolder(name, contents){
-      sheet.innerHTML = `<h2 style=\"margin-top:0\">${escapeHtml(name)}</h2>`;
+      explorerTitle.textContent = name;
+      explorerBody.innerHTML = '';
       if(contents.length){
         const ul = document.createElement('ul');
         contents.forEach(c => {
@@ -155,11 +196,10 @@
           li.textContent = c;
           ul.appendChild(li);
         });
-        sheet.appendChild(ul);
+        explorerBody.appendChild(ul);
       } else {
-        sheet.innerHTML += '<p style="opacity:.7">(내용 없음)</p>';
+        explorerBody.innerHTML = '<p style="opacity:.7">(내용 없음)</p>';
       }
-      sheet.innerHTML += '<div style="margin-top:12px"><button onclick="closeModal()">닫기</button></div>';
       modal.classList.add('active');
     }
 
