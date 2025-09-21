@@ -3,230 +3,65 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>트렌디 데스크탑 — Paperlogy</title>
-
-  <!-- Paperlogy 웹폰트 로드 -->
-  
+  <title>공사 중</title>
+  <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304@1.0/Paperlogy-8ExtraBold.woff2" rel="stylesheet" as="font" type="font/woff2" crossorigin>
   <style>
-    @import url('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css');
-    /* 기본 리셋 */
-    :root{
-      --bg:#ffffff;
-      --black:#0b0b0c;
-      --purple-1:#6b21a8; /* 보라 계열 */
-      --purple-2:#9b5cf6; /* 그라디언트 */
-      --accent-gradient: linear-gradient(135deg,var(--purple-1),var(--purple-2));
-      --shadow-1: 0 6px 18px rgba(15,12,30,0.12);
-      --shadow-2: 0 18px 40px rgba(15,12,30,0.08);
-      --glass: rgba(255,255,255,0.7);
+    @font-face {
+    font-family: 'Paperlogy';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+    font-weight: 800;
+    font-style: normal;
+  }
+
+    /* 기본 스타일 */
+    :root {
+      --bg: #ffffff;
+      --text: #0b0b0b;
     }
-    html,body{height:100%;}
-    body{
-      margin:0; padding:0; min-height:100%;
-      font-family: 'Paperlogy', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans KR', 'Helvetica Neue', Arial;
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
       background: var(--bg);
-      color:var(--black);
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      overflow:hidden;
+      color: var(--text);
+      font-family: 'Paperlogy', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
 
-    /* 바탕화면 컨테이너 */
-    .desktop {
-      position:relative;
-      width:100vw; height:100vh;
-      padding:28px 40px;
-      box-sizing:border-box;
-      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(250,249,255,1) 100%);
-      display:flex; flex-direction:column;
+    /* 화면 중앙 정렬 */
+    .center-wrap {
+      min-height: 100vh;            /* 세로 전체 높이 */
+      display: grid;
+      place-items: center;          /* 가로/세로 중앙 정렬 */
+      text-align: center;
+      padding: 2rem;
     }
 
-    /* 상단 가운데 타이틀 (선택) */
-    .title-bar{
-      display:flex; align-items:center; justify-content:center;
-      pointer-events:none;
-      margin-bottom:12px;
-    }
-    .title{
-      font-size:18px; font-weight:700; letter-spacing:-0.02em;
-      background: -webkit-linear-gradient(90deg, #111, #6b21a8);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-    }
-
-    /* 아이콘 그리드 */
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fill, 110px);
-      grid-auto-rows: 120px;
-      gap:18px 28px;
-      align-content:start;
-      overflow:auto; padding:12px;
-      flex:1;
+    /* 큰 볼드 텍스트 */
+    h1.big {
+      font-weight: 900;             /* 매우 굵게 */
+      font-size: clamp(36px, 12vw, 140px); /* 반응형 크기: 작은화면 36px, 큰화면 최대 140px */
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin: 0;
+      transform: translateY(-2px);  /* 미세한 시각 조정 */
+      /* 약간의 그림자(선택) */
+      text-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
     }
 
-    /* 폴더 아이콘 스타일 */
-    .folder{
-      width:100px; height:100px; border-radius:12px;
-      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
-      padding:10px; box-sizing:border-box; cursor:default;
-      transition:transform .18s ease, box-shadow .18s ease;
-      user-select:none;
+    /* 보조 텍스트 (선택) */
+    p.sub {
+      margin-top: 0.8rem;
+      font-size: 14px;
+      color: #666;
     }
-    .folder .glyph{
-      width:64px; height:48px; border-radius:10px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:30px; font-weight:700;
-      background: var(--accent-gradient);
-      box-shadow: var(--shadow-1);
-      transform:translateY(2px);
-    }
-    .folder .label{
-      margin-top:8px; font-size:13px; text-align:center; line-height:1.1;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;
-      color: #0b0b0c; font-weight:500;
-    }
-
-    .folder:hover{ transform: translateY(-6px); box-shadow: var(--shadow-2); }
-
-    /* 더 모던한 그림자와 미세한 블러 */
-    .desktop::after{
-      content:""; position:absolute; inset:0; pointer-events:none;
-      background-image: radial-gradient(circle at 10% 10%, rgba(155,92,246,0.035), transparent 8%), radial-gradient(circle at 90% 90%, rgba(107,33,168,0.03), transparent 6%);
-      mix-blend-mode:overlay;
-    }
-
-    /* 폴더 모달 (더블클릭 오픈 시) */
-    .modal{
-      position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:60;
-    }
-    .modal .sheet{
-      width:min(880px,94%); max-height:84vh; overflow:auto;
-      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,249,255,0.95));
-      border-radius:14px; padding:18px; box-shadow: 0 40px 80px rgba(11,11,12,0.12);
-    }
-    .modal.active{ display:flex; }
-
-    /* 툴바(오른쪽 하단) */
-    .dock{
-      position:fixed; right:24px; bottom:24px; z-index:80; display:flex; gap:10px; align-items:center;
-    }
-    .dock .btn{
-      min-width:56px; padding:10px 12px; border-radius:12px; font-weight:600;
-      background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
-      box-shadow: 0 8px 30px rgba(11,11,12,0.08);
-      cursor:pointer;
-    }
-
-    /* 스크롤바 스타일 (데스크탑처럼 은은하게) */
-    .grid::-webkit-scrollbar{ width:10px; height:10px; }
-    .grid::-webkit-scrollbar-thumb{ border-radius:999px; background:linear-gradient(180deg, rgba(107,33,168,0.14), rgba(155,92,246,0.08)); }
-
-    /* 반응형 - 작은 화면에서 한 줄에 더 적음 */
-    @media (max-width:480px){ .grid{ gap:12px 16px; grid-template-columns: repeat(auto-fill, 86px); } .folder{ width:86px; height:86px; } }
   </style>
 </head>
 <body>
-  <div class="desktop">
-    <div class="title-bar"><div class="title">트렌디 데스크탑</div></div>
-
-    <div id="grid" class="grid" aria-live="polite">
-      <!-- 폴더들이 여기로 채워집니다. -->
-    </div>
-
-    <div class="dock">
-      <div id="refresh" class="btn">폴더 새로고침</div>
-      <div id="help" class="btn">사용법</div>
-    </div>
+  <div class="center-wrap" role="main" aria-labelledby="site-status">
+    <h1 id="site-status" class="big">공사 중</h1>
+    <!-- 원하면 설명 추가 -->
+    <!-- <p class="sub">곧 돌아오겠습니다 — 점검 중입니다.</p> -->
   </div>
-
-  <!-- 폴더 내용 모달 -->
-  <div id="modal" class="modal" role="dialog" aria-hidden="true">
-    <div class="sheet" id="sheet"></div>
-  </div>
-
-  <script>
-    // 사용법: 같은 디렉터리에 "folder.txt" 파일을 두세요.
-    // 파일 포맷 (한 줄에 하나):
-    // 이름,아이콘(선택)
-    // 예: Documents,📁
-    // 예: 개인프로젝트
-    // 빈 줄과 #으로 시작하는 줄은 무시합니다.
-
-    const GRID = document.getElementById('grid');
-    const MODAL = document.getElementById('modal');
-    const SHEET = document.getElementById('sheet');
-
-    async function loadFolders(){
-      GRID.innerHTML = '';
-      try{
-        const res = await fetch('folder.txt', {cache: 'no-store'});
-        if(!res.ok) throw new Error('폴더 파일을 찾을 수 없습니다 (folder.txt).');
-        const text = await res.text();
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        const items = lines.filter(l => !l.startsWith('#'));
-
-        if(items.length === 0){
-          GRID.innerHTML = '<div style="opacity:.6;padding:18px">folder.txt 에 폴더 목록을 추가하세요. (한 줄에 하나 — 예: Documents,📁)</div>';
-          return;
-        }
-
-        items.forEach((line, idx) => {
-          // 분해: name, optional glyph
-          const parts = line.split(',');
-          const name = parts[0].trim();
-          const glyph = parts[1] ? parts[1].trim() : '📁';
-
-          const el = document.createElement('button');
-          el.className = 'folder';
-          el.setAttribute('data-name', name);
-          el.setAttribute('aria-label', name);
-          el.innerHTML = `\n            <div class="glyph" aria-hidden="true">${escapeHtml(glyph)}</div>\n            <div class="label">${escapeHtml(name)}</div>\n          `;
-
-          // 더블클릭으로 열기
-          let clickTimer = null;
-          el.addEventListener('click', (e) => {
-            // 더블 클릭 처리를 위해 타이머 사용
-            if(clickTimer){ clearTimeout(clickTimer); clickTimer = null; openFolder(name, glyph); return; }
-            clickTimer = setTimeout(()=>{ clearTimeout(clickTimer); clickTimer = null; /* single click: 선택(스타일) 가능 */ toggleSelect(el); }, 250);
-          });
-
-          // 우클릭 메뉴 비활성화 (데스크탑 느낌)
-          el.addEventListener('contextmenu', e => e.preventDefault());
-
-          GRID.appendChild(el);
-        });
-
-      }catch(err){
-        GRID.innerHTML = `<div style="color:#b00;padding:18px">로드 에러: ${escapeHtml(err.message)}</div>`;
-      }
-    }
-
-    // 선택 토글
-    function toggleSelect(el){
-      if(el.classList.contains('selected')) el.classList.remove('selected');
-      else el.classList.add('selected');
-    }
-
-    // 폴더 열기 모달
-    function openFolder(name, glyph){
-      SHEET.innerHTML = `<h2 style="margin:0 0 8px;font-weight:700">${escapeHtml(name)}</h2><p style="margin:0 0 12px;opacity:.8">아이콘: ${escapeHtml(glyph)}</p><div style="color:#333;opacity:.9">(여기에 폴더 내부 내용을 채울 수 있습니다.)</div><div style="height:12px"></div><div><button id=closeBtn style="padding:8px 12px;border-radius:10px">닫기</button></div>`;
-      MODAL.classList.add('active'); MODAL.setAttribute('aria-hidden','false');
-      document.getElementById('closeBtn').addEventListener('click', closeModal);
-    }
-    function closeModal(){ MODAL.classList.remove('active'); MODAL.setAttribute('aria-hidden','true'); }
-
-    // 안전한 HTML 이스케이프
-    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    // UI 버튼들
-    document.getElementById('refresh').addEventListener('click', loadFolders);
-    document.getElementById('help').addEventListener('click', ()=> alert('folder.txt 파일을 같은 폴더에 두고, 한 줄에 하나씩 폴더 이름(옵션: 아이콘)을 넣으세요. 예: Documents,📁'));
-
-    // 초기 로드
-    loadFolders();
-
-    // ESC로 모달 닫기
-    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeModal(); });
-  </script>
 </body>
 </html>
