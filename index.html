@@ -52,7 +52,7 @@
     /* 폴더 컨테이너 */
     #folders{
       position:absolute;
-      top:160px; /* 텍스트 아래로 내림 */
+      top:160px;
       left:40px;
       display:flex; flex-wrap:wrap;
     }
@@ -89,7 +89,7 @@
       font-size:34px; color:#fff; cursor:pointer;
     }
 
-    /* 모달 (윈도우 탐색기 스타일) */
+    /* 모달 (탐색기) */
     .modal{
       position:fixed; inset:0; background:rgba(0,0,0,0.5);
       display:none; align-items:center; justify-content:center;
@@ -107,15 +107,26 @@
     .explorer-header .title{font-weight:600;}
     .explorer-header .close-btn{cursor:pointer; font-weight:900;}
 
+    .explorer-path{
+      padding:6px 12px; font-size:13px; background:#f3f4f6; border-bottom:1px solid #e5e7eb;
+      display:flex; align-items:center; gap:10px;
+    }
+    .back-btn{
+      cursor:pointer; font-weight:bold; padding:2px 6px; border-radius:4px;
+      background:#e5e7eb; border:1px solid #d1d5db; font-size:12px;
+    }
+    .back-btn:hover{background:#d1d5db;}
+
     .explorer-body{
       flex:1; overflow:auto; padding:12px; background:#fff;
     }
     .explorer-body ul{list-style:none; margin:0; padding:0;}
     .explorer-body li{
       padding:6px 8px; border-bottom:1px solid #f1f5f9; font-size:14px;
-      cursor:default;
+      cursor:pointer; display:flex; align-items:center; gap:6px;
     }
     .explorer-body li:hover{background:#f9fafb;}
+    .icon-emoji{width:20px;}
   </style>
 </head>
 <body>
@@ -137,8 +148,12 @@
   <div id="modal" class="modal">
     <div class="explorer">
       <div class="explorer-header">
-        <div class="title" id="explorer-title">폴더</div>
+        <div class="title" id="explorer-title">탐색기</div>
         <div class="close-btn" onclick="closeModal()">✕</div>
+      </div>
+      <div class="explorer-path">
+        <button class="back-btn" id="back-btn">⬅️</button>
+        <div id="explorer-path">/</div>
       </div>
       <div class="explorer-body" id="explorer-body"></div>
     </div>
@@ -149,36 +164,40 @@
     const modal = document.getElementById('modal');
     const explorerTitle = document.getElementById('explorer-title');
     const explorerBody = document.getElementById('explorer-body');
+    const explorerPath = document.getElementById('explorer-path');
+    const backBtn = document.getElementById('back-btn');
+
+    let rootData = [];
+    let currentPath = [];
+    let currentNode = null;
 
     async function loadFolders(){
       foldersDiv.innerHTML = '';
       try{
         const res = await fetch('folder.txt', {cache:'no-store'});
         if(!res.ok) throw new Error('folder.txt 없음');
-        const text = await res.text();
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        const items = lines.filter(l => !l.startsWith('#'));
+        rootData = await res.json();
 
-        items.forEach(line => {
-          const [name, contentStr] = line.split('|');
-          const contents = contentStr ? contentStr.split(';').map(c=>c.trim()).filter(Boolean) : [];
+        // 데스크탑에 최상위 폴더 아이콘 표시
+        rootData.forEach(item=>{
+          if(item.type==="folder"){
+            const el = document.createElement('div');
+            el.className = 'folder';
 
-          const el = document.createElement('div');
-          el.className = 'folder';
+            const icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.style.backgroundImage = "url('folder.png')";
 
-          const icon = document.createElement('div');
-          icon.className = 'icon';
-          icon.style.backgroundImage = contents.length > 0 ? "url('folder.png')" : "url('folder_empty.png')";
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = item.name;
 
-          const label = document.createElement('div');
-          label.className = 'label';
-          label.textContent = name;
+            el.appendChild(icon);
+            el.appendChild(label);
 
-          el.appendChild(icon);
-          el.appendChild(label);
-
-          el.addEventListener('dblclick', ()=> openFolder(name, contents));
-          foldersDiv.appendChild(el);
+            el.addEventListener('dblclick', ()=> openFolder(item, [item.name]));
+            foldersDiv.appendChild(el);
+          }
         });
 
       }catch(err){
@@ -186,22 +205,75 @@
       }
     }
 
-    function openFolder(name, contents){
-      explorerTitle.textContent = name;
+    function renderExplorer(node, path){
+      explorerTitle.textContent = node.name || "탐색기";
+      explorerPath.textContent = path.length ? path.join(" > ") : "/";
       explorerBody.innerHTML = '';
-      if(contents.length){
+
+      if(node.children && node.children.length){
         const ul = document.createElement('ul');
-        contents.forEach(c => {
+        node.children.forEach(child=>{
           const li = document.createElement('li');
-          li.textContent = c;
+          const iconSpan = document.createElement('span');
+          iconSpan.className="icon-emoji";
+          iconSpan.textContent = child.type==="folder" ? "📁" : "📄";
+
+          li.appendChild(iconSpan);
+          li.appendChild(document.createTextNode(child.name));
+
+          if(child.type==="folder"){
+            li.addEventListener('click', ()=> {
+              currentNode = child;
+              currentPath = [...path, child.name];
+              renderExplorer(child, currentPath);
+            });
+          }else if(child.type==="file"){
+            li.addEventListener('click', ()=> handleFileAction(child));
+          }
+
           ul.appendChild(li);
         });
         explorerBody.appendChild(ul);
       } else {
         explorerBody.innerHTML = '<p style="opacity:.7">(내용 없음)</p>';
       }
+    }
+
+    function openFolder(node, path){
+      currentNode = node;
+      currentPath = path;
+      renderExplorer(node, path);
       modal.classList.add('active');
     }
+
+    function handleFileAction(file){
+      if(!file.action) return;
+      if(file.action.startsWith("redirect:")){
+        const url = file.action.replace("redirect:","");
+        window.location.href = url;
+      }else if(file.action.startsWith("open:")){
+        const target = file.action.replace("open:","");
+        window.open(target, "_blank");
+      }
+    }
+
+    function goBack(){
+      if(currentPath.length <= 1){
+        // 최상위로 돌아가면 모달 닫기
+        closeModal();
+        return;
+      }
+      currentPath.pop(); // 마지막 경로 제거
+      let node = rootData;
+      for(const name of currentPath){
+        node = node.find(item => item.name===name);
+        if(node && node.children) node = node;
+      }
+      currentNode = node;
+      renderExplorer(node, currentPath);
+    }
+
+    backBtn.addEventListener('click', goBack);
 
     function closeModal(){ modal.classList.remove('active'); }
 
