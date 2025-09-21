@@ -3,65 +3,175 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>공사 중</title>
-  <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304@1.0/Paperlogy-8ExtraBold.woff2" rel="stylesheet" as="font" type="font/woff2" crossorigin>
+  <title>트렌디 데스크탑 — Paperlogy</title>
+
+  <!-- Paperlogy 웹폰트 로드 -->
+  <link href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css" rel="stylesheet">
   <style>
-    @font-face {
-    font-family: 'Paperlogy';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
-    font-weight: 800;
-    font-style: normal;
-  }
-
-    /* 기본 스타일 */
-    :root {
-      --bg: #ffffff;
-      --text: #0b0b0b;
+    :root{
+      --purple:#7C3AED;
+      --grid:#d1d5db;
+      --accent-gradient: linear-gradient(135deg,#f9c74f,#90be6d,#f9844a,#f3722c,#f94144);
+    }
+    html,body{height:100%; margin:0;}
+    body{
+      font-family:'Paperlogy', sans-serif;
+      background:#fff;
+      overflow:hidden;
+      display:flex; justify-content:center; align-items:center;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Paperlogy', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    /* 데스크탑 영역 */
+    .desktop{
+      position:relative;
+      width:100%; height:100%;
+      background:
+        linear-gradient(to right, transparent 99px, var(--grid) 100px),
+        linear-gradient(to bottom, transparent 99px, var(--grid) 100px);
+      background-size:100px 100px;
     }
 
-    /* 화면 중앙 정렬 */
-    .center-wrap {
-      min-height: 100vh;            /* 세로 전체 높이 */
-      display: grid;
-      place-items: center;          /* 가로/세로 중앙 정렬 */
-      text-align: center;
-      padding: 2rem;
+    /* 상단 텍스트 */
+    .desktop .date{
+      position:absolute; top:40px; left:60px;
+      font-size:80px; font-weight:900;
+      color:var(--purple);
     }
 
-    /* 큰 볼드 텍스트 */
-    h1.big {
-      font-weight: 900;             /* 매우 굵게 */
-      font-size: clamp(36px, 12vw, 140px); /* 반응형 크기: 작은화면 36px, 큰화면 최대 140px */
-      line-height: 1;
-      letter-spacing: -0.02em;
-      margin: 0;
-      transform: translateY(-2px);  /* 미세한 시각 조정 */
-      /* 약간의 그림자(선택) */
-      text-shadow: 0 6px 18px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
+    /* 오른쪽 장식 (그래디언트 리본) */
+    .ribbon{
+      position:absolute; top:0; right:0;
+      width:480px; height:480px;
+      background:var(--accent-gradient);
+      border-radius:50%;
+      filter:blur(60px) brightness(1.2);
+      opacity:.7;
+      transform:translate(30%, -20%) rotate(20deg);
     }
 
-    /* 보조 텍스트 (선택) */
-    p.sub {
-      margin-top: 0.8rem;
-      font-size: 14px;
-      color: #666;
+    /* 폴더 아이콘 */
+    .folder{
+      position:relative;
+      width:90px; height:90px;
+      margin:20px 40px;
+      display:inline-flex; flex-direction:column; align-items:center;
+      cursor:pointer;
+    }
+    .folder .icon{
+      width:80px; height:60px;
+      background:var(--purple);
+      border-radius:10px;
+      box-shadow:0 4px 8px rgba(0,0,0,0.2);
+    }
+    .folder .label{
+      margin-top:8px; font-size:14px; font-weight:600;
+      color:#111;
+      text-align:center;
+      max-width:90px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
+    /* 하단 Dock */
+    .dock{
+      position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      width:100%; max-width:600px; height:70px;
+      background:#333;
+      border-top-left-radius:20px; border-top-right-radius:20px;
+      display:flex; justify-content:center; align-items:center; gap:30px;
+    }
+    .dock .btn{
+      font-size:34px; color:#fff; cursor:pointer;
+    }
+
+    /* 모달 */
+    .modal{
+      position:fixed; inset:0; background:rgba(0,0,0,0.5);
+      display:none; align-items:center; justify-content:center;
+    }
+    .modal.active{display:flex;}
+    .modal .sheet{
+      background:#fff; border-radius:14px; padding:20px;
+      max-width:600px; width:90%; max-height:80vh; overflow:auto;
     }
   </style>
 </head>
 <body>
-  <div class="center-wrap" role="main" aria-labelledby="site-status">
-    <h1 id="site-status" class="big">공사 중</h1>
-    <!-- 원하면 설명 추가 -->
-    <!-- <p class="sub">곧 돌아오겠습니다 — 점검 중입니다.</p> -->
+  <div class="desktop">
+    <div class="date">2025209</div>
+    <div class="ribbon"></div>
+
+    <!-- 폴더 컨테이너 -->
+    <div id="folders"></div>
+
+    <!-- 하단 dock -->
+    <div class="dock">
+      <div id="refresh" class="btn">⚙️</div>
+      <div id="sound" class="btn">🔊</div>
+    </div>
   </div>
+
+  <!-- 폴더 모달 -->
+  <div id="modal" class="modal">
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+  <script>
+    const foldersDiv = document.getElementById('folders');
+    const modal = document.getElementById('modal');
+    const sheet = document.getElementById('sheet');
+
+    async function loadFolders(){
+      foldersDiv.innerHTML = '';
+      try{
+        const res = await fetch('folder.txt', {cache:'no-store'});
+        if(!res.ok) throw new Error('folder.txt 없음');
+        const text = await res.text();
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const items = lines.filter(l => !l.startsWith('#'));
+
+        items.forEach(line => {
+          // 폴더: 이름|내용1;내용2;...
+          const [name, contentStr] = line.split('|');
+          const contents = contentStr ? contentStr.split(';').map(c=>c.trim()).filter(Boolean) : [];
+
+          const el = document.createElement('div');
+          el.className = 'folder';
+          el.innerHTML = `<div class="icon"></div><div class="label">${escapeHtml(name)}</div>`;
+          el.addEventListener('dblclick', ()=> openFolder(name, contents));
+          foldersDiv.appendChild(el);
+        });
+
+      }catch(err){
+        foldersDiv.innerHTML = `<div style="color:#b00;padding:20px">에러: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function openFolder(name, contents){
+      sheet.innerHTML = `<h2 style=\"margin-top:0\">${escapeHtml(name)}</h2>`;
+      if(contents.length){
+        const ul = document.createElement('ul');
+        contents.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = c;
+          ul.appendChild(li);
+        });
+        sheet.appendChild(ul);
+      } else {
+        sheet.innerHTML += '<p style="opacity:.7">(내용 없음)</p>';
+      }
+      sheet.innerHTML += '<div style="margin-top:12px"><button onclick="closeModal()">닫기</button></div>';
+      modal.classList.add('active');
+    }
+
+    function closeModal(){ modal.classList.remove('active'); }
+
+    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    document.getElementById('refresh').addEventListener('click', loadFolders);
+    modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+    loadFolders();
+  </script>
 </body>
 </html>
