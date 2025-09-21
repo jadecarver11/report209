@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>2025209</title>
+
+  <!-- Paperlogy 웹폰트 로드 -->
+  <link href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css" rel="stylesheet">
+  <style>
+    :root{
+      --purple:#7C3AED;
+      --grid:#d1d5db;
+      --accent-gradient: linear-gradient(135deg,#f9c74f,#90be6d,#f9844a,#f3722c,#f94144);
+    }
+    html,body{height:100%; margin:0;}
+    body{
+      font-family:'Paperlogy', sans-serif;
+      background:#fff;
+      overflow:hidden;
+      display:flex; justify-content:center; align-items:center;
+    }
+
+    /* 데스크탑 영역 */
+    .desktop{
+      position:relative;
+      width:100%; height:100%;
+      background:
+        linear-gradient(to right, transparent 99px, var(--grid) 100px),
+        linear-gradient(to bottom, transparent 99px, var(--grid) 100px);
+      background-size:100px 100px;
+    }
+
+    /* 상단 텍스트 */
+    .desktop .date{
+      position:absolute; top:40px; left:60px;
+      font-size:80px; font-weight:900;
+      color:var(--purple);
+    }
+
+    /* 오른쪽 장식 (그래디언트 리본) */
+    .ribbon{
+      position:absolute; top:0; right:0;
+      width:480px; height:480px;
+      background:var(--accent-gradient);
+      border-radius:50%;
+      filter:blur(60px) brightness(1.2);
+      opacity:.7;
+      transform:translate(30%, -20%) rotate(20deg);
+    }
+
+    /* 폴더 컨테이너 */
+    #folders{
+      position:absolute;
+      top:160px;
+      left:40px;
+      display:flex; flex-wrap:wrap;
+    }
+
+    /* 폴더 아이콘 */
+    .folder{
+      position:relative;
+      width:90px; height:110px;
+      margin:20px 40px;
+      display:inline-flex; flex-direction:column; align-items:center;
+      cursor:pointer;
+    }
+    .folder .icon{
+      width:80px; height:60px;
+      background-size:cover; background-position:center;
+    }
+    .folder .label{
+      margin-top:8px; font-size:14px; font-weight:600;
+      color:#111;
+      text-align:center;
+      max-width:90px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
+    /* 하단 Dock */
+    .dock{
+      position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      width:100%; max-width:600px; height:70px;
+      background:#333;
+      border-top-left-radius:20px; border-top-right-radius:20px;
+      display:flex; justify-content:center; align-items:center; gap:30px;
+    }
+    .dock .btn{
+      font-size:34px; color:#fff; cursor:pointer;
+    }
+
+    /* 모달 (탐색기) */
+    .modal{
+      position:fixed; inset:0; background:rgba(0,0,0,0.5);
+      display:none; align-items:center; justify-content:center;
+    }
+    .modal.active{display:flex;}
+    .modal .explorer{
+      background:#f9fafb; border:1px solid #cbd5e1; border-radius:8px;
+      width:700px; max-width:95%; height:500px; display:flex; flex-direction:column;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);
+    }
+    .explorer-header{
+      background:#e5e7eb; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;
+      border-bottom:1px solid #d1d5db;
+    }
+    .explorer-header .title{font-weight:600;}
+    .explorer-header .close-btn{cursor:pointer; font-weight:900;}
+
+    .explorer-path{
+      padding:6px 12px; font-size:13px; background:#f3f4f6; border-bottom:1px solid #e5e7eb;
+    }
+
+    .explorer-body{
+      flex:1; overflow:auto; padding:12px; background:#fff;
+    }
+    .explorer-body ul{list-style:none; margin:0; padding:0;}
+    .explorer-body li{
+      padding:6px 8px; border-bottom:1px solid #f1f5f9; font-size:14px;
+      cursor:pointer; display:flex; align-items:center; gap:6px;
+    }
+    .explorer-body li:hover{background:#f9fafb;}
+    .icon-emoji{width:20px;}
+  </style>
+</head>
+<body>
+  <div class="desktop">
+    <div class="date">2025209</div>
+    <div class="ribbon"></div>
+
+    <!-- 폴더 컨테이너 -->
+    <div id="folders"></div>
+
+    <!-- 하단 dock -->
+    <div class="dock">
+      <div id="refresh" class="btn">⚙️</div>
+      <div id="sound" class="btn">🔊</div>
+    </div>
+  </div>
+
+  <!-- 폴더 모달 (탐색기) -->
+  <div id="modal" class="modal">
+    <div class="explorer">
+      <div class="explorer-header">
+        <div class="title" id="explorer-title">탐색기</div>
+        <div class="close-btn" onclick="closeModal()">✕</div>
+      </div>
+      <div class="explorer-path" id="explorer-path">/</div>
+      <div class="explorer-body" id="explorer-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const foldersDiv = document.getElementById('folders');
+    const modal = document.getElementById('modal');
+    const explorerTitle = document.getElementById('explorer-title');
+    const explorerBody = document.getElementById('explorer-body');
+    const explorerPath = document.getElementById('explorer-path');
+
+    let rootData = [];
+    let currentPath = [];
+    let currentNode = null;
+
+    async function loadFolders(){
+      foldersDiv.innerHTML = '';
+      try{
+        const res = await fetch('folder.txt', {cache:'no-store'});
+        if(!res.ok) throw new Error('folder.txt 없음');
+        rootData = await res.json();
+
+        // 데스크탑에 최상위 폴더 아이콘 표시
+        rootData.forEach(item=>{
+          if(item.type==="folder"){
+            const el = document.createElement('div');
+            el.className = 'folder';
+
+            const icon = document.createElement('div');
+            icon.className = 'icon';
+            icon.style.backgroundImage = "url('folder.png')";
+
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = item.name;
+
+            el.appendChild(icon);
+            el.appendChild(label);
+
+            el.addEventListener('dblclick', ()=> openFolder(item, [item.name]));
+            foldersDiv.appendChild(el);
+          }
+        });
+
+      }catch(err){
+        foldersDiv.innerHTML = `<div style="color:#b00;padding:20px">에러: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderExplorer(node, path){
+      explorerTitle.textContent = node.name || "탐색기";
+      explorerPath.textContent = path.join(" > ");
+      explorerBody.innerHTML = '';
+
+      if(node.children && node.children.length){
+        const ul = document.createElement('ul');
+        node.children.forEach(child=>{
+          const li = document.createElement('li');
+          const iconSpan = document.createElement('span');
+          iconSpan.className="icon-emoji";
+          iconSpan.textContent = child.type==="folder" ? "📁" : "📄";
+
+          li.appendChild(iconSpan);
+          li.appendChild(document.createTextNode(child.name));
+
+          if(child.type==="folder"){
+            li.addEventListener('click', ()=> {
+              currentNode = child;
+              currentPath = [...path, child.name];
+              renderExplorer(child, currentPath);
+            });
+          }else if(child.type==="file"){
+            li.addEventListener('click', ()=> handleFileAction(child));
+          }
+
+          ul.appendChild(li);
+        });
+        explorerBody.appendChild(ul);
+      } else {
+        explorerBody.innerHTML = '<p style="opacity:.7">(내용 없음)</p>';
+      }
+    }
+
+    function openFolder(node, path){
+      currentNode = node;
+      currentPath = path;
+      renderExplorer(node, path);
+      modal.classList.add('active');
+    }
+
+    function handleFileAction(file){
+      if(!file.action) return;
+      if(file.action.startsWith("redirect:")){
+        const url = file.action.replace("redirect:","");
+        window.location.href = url;
+      }else if(file.action.startsWith("open:")){
+        const target = file.action.replace("open:","");
+        window.open(target, "_blank");
+      }
+    }
+
+    function closeModal(){ modal.classList.remove('active'); }
+
+    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    document.getElementById('refresh').addEventListener('click', loadFolders);
+    modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+    window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+    loadFolders();
+  </script>
+</body>
+</html>
