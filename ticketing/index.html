@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>선착순 예매 시스템</title>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+  <header class="bg-white shadow-md p-4 text-center text-lg font-bold">
+    선착순 예매
+  </header>
+
+  <main id="main" class="flex-grow overflow-y-auto p-4">
+    <section id="reserveSection" class="">
+      <h2 class="text-xl font-semibold mb-4">예매 가능한 행사</h2>
+      <ul id="eventList" class="divide-y divide-gray-300 bg-white rounded-lg overflow-hidden border"></ul>
+    </section>
+
+    <section id="myReserveSection" class="hidden">
+      <h2 class="text-xl font-semibold mb-4">나의 예매</h2>
+      <div class="bg-white p-4 rounded-lg border">
+        <label class="block mb-2 text-sm font-semibold">학번</label>
+        <input id="searchStudentId" type="text" placeholder="예: 20901" class="w-full p-2 border rounded mb-3">
+        <label class="block mb-2 text-sm font-semibold">예매번호</label>
+        <input id="searchTicket" type="text" placeholder="예매번호" class="w-full p-2 border rounded mb-3">
+        <button id="searchBtn" class="w-full bg-blue-600 text-white py-2 rounded">조회</button>
+        <div id="myReserveResult" class="mt-4 text-sm text-gray-700"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-t p-2 flex justify-around fixed bottom-0 left-0 right-0">
+    <button id="tab-reserve" class="text-blue-600 font-semibold">예매하기</button>
+    <button id="tab-my" class="text-gray-500">나의 예매</button>
+  </footer>
+
+  <div class="fixed bottom-16 left-0 right-0 flex justify-center">
+    <button id="reserveBtn" class="bg-gray-400 text-white font-bold py-3 px-10 rounded-xl transition disabled:opacity-50" disabled>
+      예매하기
+    </button>
+  </div>
+
+  <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
+      <h2 class="text-xl font-bold mb-4">개인정보 입력</h2>
+      <label class="block mb-2 text-sm font-semibold">학번</label>
+      <input id="studentId" type="text" placeholder="예: 20901" class="w-full p-2 border rounded mb-3">
+      <label class="block mb-2 text-sm font-semibold">이름</label>
+      <input id="name" type="text" placeholder="이름" class="w-full p-2 border rounded mb-3">
+      <label class="block mb-2 text-sm font-semibold">전화번호</label>
+      <input id="phone" type="text" placeholder="하이픈 없이 숫자만" class="w-full p-2 border rounded mb-3">
+      <div class="flex items-center mb-3">
+        <input id="agree" type="checkbox" class="mr-2">
+        <label for="agree" class="text-sm">개인정보 수집 및 이용에 동의합니다.</label>
+      </div>
+      <button id="viewPrivacy" class="text-blue-600 text-sm underline mb-3">약관 보기</button>
+      <div class="flex justify-end space-x-2">
+        <button id="cancelInfo" class="px-4 py-2 bg-gray-300 rounded">취소</button>
+        <button id="submitInfo" class="px-4 py-2 bg-blue-600 text-white rounded">다음 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="privacyModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-lg h-96 overflow-y-auto">
+      <h2 class="text-lg font-bold mb-4">개인정보 처리방침</h2>
+      <pre id="privacyText" class="whitespace-pre-wrap text-sm text-gray-700"></pre>
+      <div class="text-right mt-4">
+        <button id="closePrivacy" class="px-4 py-2 bg-blue-600 text-white rounded">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="choiceModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-lg h-[80vh] overflow-y-auto">
+      <h2 id="eventTitle" class="text-xl font-bold mb-4"></h2>
+      <div id="choiceList" class="space-y-2"></div>
+      <div class="text-right mt-4">
+        <button id="completeReserve" class="px-6 py-2 bg-blue-600 text-white rounded">예매 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfgFrqqwTDssY11-Z1Ti1pNMSSWJIHA_Q",
+      authDomain: "report209-16824.firebaseapp.com",
+      projectId: "report209-16824",
+      storageBucket: "report209-16824.firebasestorage.app",
+      messagingSenderId: "45258886547",
+      appId: "1:45258886547:web:3589999076939b8f58ec66",
+      measurementId: "G-RRBM6LHGSY"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let selectedEvent = null;
+    let selectedOption = null;
+
+    async function loadEvents() {
+      const list = document.getElementById("eventList");
+      list.innerHTML = "";
+      const snapshot = await db.collection("events").get();
+      snapshot.forEach(doc => {
+        const e = doc.data();
+        const li = document.createElement("li");
+        li.className = "p-4 cursor-pointer hover:bg-gray-100 transition";
+        li.innerHTML = `<div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-lg">${e.title}</div>
+            <div class="text-sm text-gray-500">${e.date}</div>
+          </div>
+          <span class="text-gray-400 text-sm">${e.type === "choice" ? "선택형" : "좌석형"}</span>
+        </div>`;
+        li.onclick = () => {
+          selectedEvent = { id: doc.id, ...e };
+          document.querySelectorAll("#eventList li").forEach(el => el.classList.remove("bg-blue-100"));
+          li.classList.add("bg-blue-100");
+          document.getElementById("reserveBtn").disabled = false;
+        };
+        list.appendChild(li);
+      });
+    }
+
+    loadEvents();
+
+    const reserveBtn = document.getElementById("reserveBtn");
+    reserveBtn.onclick = () => document.getElementById("infoModal").classList.remove("hidden");
+    document.getElementById("cancelInfo").onclick = () => document.getElementById("infoModal").classList.add("hidden");
+
+    document.getElementById("viewPrivacy").onclick = async () => {
+      const text = await fetch("privacy.txt").then(r => r.text());
+      document.getElementById("privacyText").textContent = text;
+      document.getElementById("privacyModal").classList.remove("hidden");
+    };
+    document.getElementById("closePrivacy").onclick = () => document.getElementById("privacyModal").classList.add("hidden");
+
+    document.getElementById("submitInfo").onclick = async () => {
+      const id = studentId.value.trim();
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const agree = document.getElementById("agree").checked;
+      if (!id || !name || !phone || !agree) return alert("모든 항목을 입력하고 동의해주세요.");
+
+      const check1 = await db.collection("reservations").where("studentId", "==", id).get();
+      const check2 = await db.collection("reservations").where("phone", "==", phone).get();
+      if (!check1.empty || !check2.empty) return alert("이미 예매된 학번 또는 전화번호입니다.");
+
+      document.getElementById("infoModal").classList.add("hidden");
+      openChoiceModal();
+    };
+
+    async function openChoiceModal() {
+      const modal = document.getElementById("choiceModal");
+      const list = document.getElementById("choiceList");
+      document.getElementById("eventTitle").textContent = selectedEvent.title;
+      list.innerHTML = "";
+
+      if (selectedEvent.type === "choice") {
+        const snapshot = await db.collection("events").doc(selectedEvent.id).collection("options").get();
+        snapshot.forEach(doc => {
+          const o = doc.data();
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left p-3 border rounded hover:bg-blue-100 transition";
+          btn.innerHTML = `${o.name} <span class="float-right text-sm text-gray-500">(${o.count}/${o.limit})</span>`;
+          btn.onclick = () => {
+            selectedOption = { id: doc.id, ...o };
+            document.querySelectorAll("#choiceList button").forEach(el => el.classList.remove("bg-blue-200"));
+            btn.classList.add("bg-blue-200");
+          };
+          list.appendChild(btn);
+        });
+      } else {
+        const seats = await db.collection("events").doc(selectedEvent.id).collection("seats").get();
+        const grid = document.createElement("div");
+        grid.className = "grid grid-cols-6 gap-2";
+        seats.forEach(doc => {
+          const s = doc.data();
+          const b = document.createElement("button");
+          b.textContent = s.label;
+          b.className = `p-2 rounded ${s.reserved ? "bg-gray-300" : "bg-green-200 hover:bg-green-300"}`;
+          b.disabled = s.reserved;
+          b.onclick = () => {
+            selectedOption = { id: doc.id, ...s };
+            document.querySelectorAll("#choiceList button").forEach(el => el.classList.remove("bg-blue-200"));
+            b.classList.add("bg-blue-200");
+          };
+          grid.appendChild(b);
+        });
+        list.appendChild(grid);
+      }
+      modal.classList.remove("hidden");
+    }
+
+    document.getElementById("completeReserve").onclick = async () => {
+      if (!selectedOption) return alert("선택을 완료해주세요.");
+
+      const studentIdVal = studentId.value.trim();
+      const nameVal = name.value.trim();
+      const phoneVal = phone.value.trim();
+
+      await db.collection("reservations").add({
+        studentId: studentIdVal,
+        name: nameVal,
+        phone: phoneVal,
+        eventId: selectedEvent.id,
+        optionId: selectedOption.id,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      if (selectedEvent.type === "choice") {
+        const ref = db.collection("events").doc(selectedEvent.id).collection("options").doc(selectedOption.id);
+        await db.runTransaction(async t => {
+          const doc = await t.get(ref);
+          const count = doc.data().count;
+          t.update(ref, { count: count + 1 });
+        });
+      } else {
+        await db.collection("events").doc(selectedEvent.id).collection("seats").doc(selectedOption.id).update({ reserved: true });
+      }
+
+      alert("예매가 완료되었습니다!");
+      document.getElementById("choiceModal").classList.add("hidden");
+      loadEvents();
+      selectedEvent = null;
+      selectedOption = null;
+      reserveBtn.disabled = true;
+    };
+
+    document.getElementById("tab-reserve").onclick = () => {
+      document.getElementById("reserveSection").classList.remove("hidden");
+      document.getElementById("myReserveSection").classList.add("hidden");
+      document.getElementById("tab-reserve").classList.add("text-blue-600");
+      document.getElementById("tab-my").classList.remove("text-blue-600");
+    };
+
+    document.getElementById("tab-my").onclick = () => {
+      document.getElementById("reserveSection").classList.add("hidden");
+      document.getElementById("myReserveSection").classList.remove("hidden");
+      document.getElementById("tab-reserve").classList.remove("text-blue-600");
+      document.getElementById("tab-my").classList.add("text-blue-600");
+    };
+
+    document.getElementById("searchBtn").onclick = async () => {
+      const id = document.getElementById("searchStudentId").value.trim();
+      const ticket = document.getElementById("searchTicket").value.trim();
+      const q = await db.collection("reservations").where("studentId", "==", id).get();
+      const result = document.getElementById("myReserveResult");
+      result.innerHTML = "";
+      if (q.empty) return result.textContent = "예매 내역이 없습니다.";
+      q.forEach(doc => {
+        result.innerHTML += `<div class="border p-2 rounded mb-2">
+          <div>이름: ${doc.data().name}</div>
+          <div>전화번호: ${doc.data().phone}</div>
+          <div>행사ID: ${doc.data().eventId}</div>
+          <div>선택ID: ${doc.data().optionId}</div>
+        </div>`;
+      });
+    };
+
+    let adminKey = "";
+    document.addEventListener("keydown", e => {
+      adminKey += e.key;
+      if (adminKey.includes("rrqq23")) {
+        alert("관리자 모드 진입 (추후 구현)");
+        adminKey = "";
+      }
+      if (adminKey.length > 10) adminKey = "";
+    });
+  </script>
+</body>
+</html>
