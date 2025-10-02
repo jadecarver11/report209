@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>선착순 예매 시스템</title>
+  <title>예매 페이지</title>
 
-  <!-- Paperlogy 웹폰트 로드 (기존 스타일과 유사) -->
+  <!-- 웹폰트 로드-->
   <link href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/Paperlogy.css" rel="stylesheet">
 
   <!-- Firebase -->
@@ -122,15 +122,14 @@
     <header>
       <div>
         <div class="title">선착순 예매</div>
-        <div class="subtitle muted">간단한 티켓팅 / 관리자 포함 · Firebase 기반 실시간 예매</div>
       </div>
-      <div style="margin-left:auto; display:none;" class="muted">관리자키: rrqq23</div>
+      <div style="margin-left:auto; display:none;" class="muted"></div>
     </header>
 
     <div class="main">
       <div class="left">
         <div style="display:flex;justify-content:space-between;align-items:end;margin-bottom:12px;">
-          <div style="font-weight:900;font-size:16px;">예매 가능한 이벤트</div>
+          <div style="font-weight:900;font-size:16px;">예매 가능 목록</div>
           <div class="small muted" id="nowTime"></div>
         </div>
 
@@ -141,25 +140,25 @@
         <div class="panel">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <div id="selectedTitle" style="font-weight:900">행사를 선택하세요</div>
+              <div id="selectedTitle" style="font-weight:900">먼저 예매할 것을 선택하세요</div>
               <div id="selectedMode" class="muted" style="margin-top:6px"></div>
             </div>
             <div id="selectedMeta" class="muted"></div>
           </div>
 
-          <div id="selectedDesc" class="muted" style="margin-top:12px">행사를 선택하면 상세 정보가 표시됩니다.</div>
+          <div id="selectedDesc" class="muted" style="margin-top:12px">목록 중 선택하면 상세 정보가 표시됩니다.</div>
 
           <div style="display:flex; gap:8px; margin-top:14px;">
             <button id="openBooking" class="primary" disabled>예매하기</button>
-            <button id="openAdminBtn" class="tab">관리자</button>
+            <button id="openAdminBtn" class="tab"></button>
           </div>
         </div>
 
         <div style="height:12px"></div>
 
         <div class="panel" style="margin-top:12px; display:none;">
-          <div style="font-weight:800; margin-bottom:6px;">간단 안내</div>
-          <div class="small">• 관리자에서 이벤트 생성 및 방식 설정 가능<br>• 개인정보 동의는 privacy.txt에서 로드됨<br>• 선착순은 서버 트랜잭션으로 처리됩니다</div>
+          <div style="font-weight:800; margin-bottom:6px;"></div>
+          <div class="small">• 선착순 예매 페이지<br>• 서비스 에러 문의 : admin@report209.site <br>• 선착순은 서버 트랜잭션으로 처리됩니다</div>
         </div>
       </div>
     </div>
@@ -198,7 +197,7 @@
           <div style="flex:1">
             <label>학번 (예: 20901)</label>
             <input type="text" id="inputStudent" placeholder="학번 입력" autocomplete="off">
-            <div class="small">형식: 5자리 숫자, 마지막 두자리는 01~36</div>
+            <div class="small">형식: ex) 20101</div>
           </div>
         </div>
 
@@ -414,9 +413,9 @@
       openBookingBtn.disabled = false;
       mainBookBtn.disabled = false;
     } else {
-      $('selectedTitle').textContent = '행사를 선택하세요';
+      $('selectedTitle').textContent = '선택하세요';
       $('selectedMode').textContent = '';
-      $('selectedDesc').textContent = '행사를 선택하면 상세 정보가 표시됩니다.';
+      $('selectedDesc').textContent = '선택하면 상세 정보가 표시됩니다.';
       openBookingBtn.disabled = true;
       mainBookBtn.disabled = true;
     }
@@ -429,7 +428,7 @@
 
   // Booking flow: open modal and step handling
   openBookingBtn.addEventListener('click', ()=> {
-    if(!selectedEvent) { alert('행사를 선택하세요.'); return; }
+    if(!selectedEvent) { alert('선택하세요.'); return; }
     flow = { student:'', name:'', phone:'', bookingData:null };
     $('mbTitle').textContent = `예매 - ${selectedEvent.name}`;
     $('mbStep1').style.display = 'block';
@@ -459,7 +458,7 @@
     // Student format: 5 digits, last two between 01 and 36
     if(!/^\d{5}$/.test(student)) return alert('학번은 5자리 숫자여야 합니다.');
     const lastTwo = parseInt(student.slice(-2), 10);
-    if(lastTwo < 1 || lastTwo > 36) return alert('학번 마지막 두 자리는 01~36 사이여야 합니다.');
+    if(lastTwo < 1 || lastTwo > 36) return alert('번호는 01~36번 까지 지원됩니다');
     if(!/^\d{8,12}$/.test(phone)) return alert('전화번호는 하이픈 없이 숫자로 입력하세요.');
 
     // Duplicate check (student OR phone)
@@ -525,7 +524,7 @@
         });
       }
 
-      alert('예매 완료되었습니다.');
+      alert('예매가 완료되었습니다.');
       closeModal('modalBooking');
     }catch(err){
       alert('예매 실패: ' + (err.message || err));
