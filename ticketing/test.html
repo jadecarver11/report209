@@ -16,7 +16,7 @@
         
         // Expose Firebase services to the global scope for use in the script tag
         window.firebase = {
-            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+            initializeApp, setLogLevel, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
             getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, runTransaction, FieldValue, serverTimestamp, getDocs, limit, orderBy
         };
     </script>
@@ -352,7 +352,7 @@
                 db = firebase.getFirestore(app);
 
                 // Disable Firestore logs (Optional, but can be verbose)
-                setLogLevel('error');
+                firebase.setLogLevel('error');
                 
                 showLoading(true);
 
