@@ -263,8 +263,7 @@
 
     // 돌아가기
     backBtn.addEventListener("click", () => {
-      if (history.length > 1) history.back();
-      else location.href = "./";
+      location.reload();
     });
 
     // 초기 상태: 로딩 중엔 비활성화
