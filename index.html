@@ -1,1 +1,275 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>5초 듣고 노래 맞추기</title>
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1f2937;
+      --card: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.18);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 700px at 20% 10%, #334155 0%, transparent 60%),
+                  radial-gradient(900px 600px at 80% 20%, #7c3aed33 0%, transparent 55%),
+                  linear-gradient(160deg, var(--bg1), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .wrap {
+      width: min(720px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(24px, 4vw, 40px);
+      letter-spacing: -0.5px;
+    }
+    .btns {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+    button {
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.10);
+      color: var(--text);
+      padding: 12px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select: none;
+    }
+    button:hover {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,255,255,0.32);
+    }
+    button:active { transform: translateY(1px) scale(0.99); }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 14px;
+      padding: 16px 14px;
+      border-radius: 16px;
+      border: 1px dashed rgba(255,255,255,0.28);
+      background: rgba(0,0,0,0.15);
+      min-height: 110px;
+      display: grid;
+      gap: 8px;
+      align-content: center;
+    }
+    .song {
+      font-size: clamp(18px, 2.4vw, 24px);
+      font-weight: 800;
+    }
+    .rule {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+    .footer {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ghost {
+      background: rgba(255,255,255,0.06);
+    }
+    @media (max-width: 520px) {
+      .btns { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <h1>&lt;5초 듣고 노래 맞추기&gt;</h1>
+
+    <section class="btns" aria-label="카테고리 선택">
+      <button data-category="발라드">발라드</button>
+      <button data-category="K-POP">K-POP</button>
+      <button data-category="트로트">트로트</button>
+      <button data-category="랩">랩</button>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <div class="song" id="songText">카테고리를 선택하세요</div>
+      <div class="rule" id="ruleText"></div>
+      <audio id="player" controls preload="auto"></audio>
+    </section>
+
+    <div class="status" id="statusText">songs.txt를 읽는 중…</div>
+
+    <div class="footer">
+      <button class="ghost" id="backBtn">돌아가기</button>
+    </div>
+  </main>
+
+  <script>
+    /**
+     * songs.txt 형식:
+     * 카테고리, 가수, 제목,파일명
+     * 예) 발라드, 윤종식, 좋니, 좋니.mp3
+     */
+    const SONGS_TXT_PATH = "songs.txt";
+
+    const statusEl = document.getElementById("statusText");
+    const songEl = document.getElementById("songText");
+    const ruleEl = document.getElementById("ruleText");
+    const player = document.getElementById("player");
+
+    const buttons = Array.from(document.querySelectorAll("button[data-category]"));
+    const backBtn = document.getElementById("backBtn");
+
+    let songs = []; // {category, artist, title, file}
+
+    function normalizeCategory(cat) {
+      const c = (cat || "").trim();
+      // 버튼은 "K-POP"로 주어졌지만 파일에 "K-pop" 등 변형이 있을 수 있어 보정
+      if (!c) return c;
+      const upper = c.toUpperCase();
+      if (upper === "KPOP" || upper === "K-POP" || upper === "K POP" || upper === "K_POP") return "K-POP";
+      return c;
+    }
+
+    function parseSongsTxt(text) {
+      const lines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith("#"));
+
+      const parsed = [];
+      for (const line of lines) {
+        // 헤더라인 스킵(카테고리, 가수, 제목,파일명)
+        if (line.replace(/\s/g, "").startsWith("카테고리,가수,제목,파일명")) continue;
+
+        // 쉼표 기준 4개 필드
+        const parts = line.split(",").map(p => p.trim());
+        if (parts.length < 4) continue;
+
+        const [categoryRaw, artist, title, file] = parts;
+        parsed.push({
+          category: normalizeCategory(categoryRaw),
+          artist,
+          title,
+          file
+        });
+      }
+      return parsed;
+    }
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function ruleTextFor(category) {
+      return (category === "K-POP")
+        ? "(가수, 제목 모두 맞춰야 함.)"
+        : "(제목만 맞춰도 됨).";
+    }
+
+    function setDisabled(state) {
+      buttons.forEach(b => b.disabled = state);
+    }
+
+    async function loadSongs() {
+      try {
+        const res = await fetch(SONGS_TXT_PATH, { cache: "no-store" });
+        if (!res.ok) throw new Error(`songs.txt 로드 실패: ${res.status}`);
+        const text = await res.text();
+        songs = parseSongsTxt(text);
+
+        if (!songs.length) {
+          statusEl.textContent = "songs.txt에서 노래를 찾지 못했어요. 형식을 확인해 주세요.";
+          setDisabled(true);
+          return;
+        }
+
+        statusEl.textContent = `준비 완료! 총 ${songs.length}곡 로드됨.`;
+        setDisabled(false);
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent =
+          "songs.txt를 불러오지 못했어요. 로컬 파일로 열었다면 서버로 실행해 주세요 (예: VSCode Live Server / python -m http.server).";
+        setDisabled(true);
+      }
+    }
+
+    function playSongForCategory(category) {
+      const filtered = songs.filter(s => normalizeCategory(s.category) === category);
+
+      if (!filtered.length) {
+        songEl.textContent = "해당 카테고리에 노래가 없어요.";
+        ruleEl.textContent = "";
+        player.removeAttribute("src");
+        player.load();
+        return;
+      }
+
+      const chosen = pickRandom(filtered);
+
+      songEl.textContent = `${chosen.title} - ${chosen.artist}`;
+      ruleEl.textContent = ruleTextFor(category);
+
+      // 오디오 재생
+      player.src = chosen.file;
+      player.currentTime = 0;
+      player.play().catch(() => {
+        // 자동재생 정책으로 실패할 수 있음(그래도 controls로 재생 가능)
+      });
+
+      statusEl.textContent = `선택됨: [${category}] ${chosen.title} - ${chosen.artist}`;
+    }
+
+    // 버튼 이벤트
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const category = btn.dataset.category;
+        playSongForCategory(category);
+      });
+    });
+
+    // 돌아가기
+    backBtn.addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else location.href = "./";
+    });
+
+    // 초기 상태: 로딩 중엔 비활성화
+    setDisabled(true);
+    loadSongs();
+  </script>
+</body>
+</html>
 
